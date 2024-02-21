@@ -1,0 +1,51 @@
+@startuml
+!theme plain
+
+entity "User" {
+    id: int
+    username: varchar
+    email: varchar
+    password: varchar / int sha256
+    registration_date: int
+}
+
+entity "Post" {
+    id: int
+    user_id: int
+    title: varchar
+    body: text
+    post_date: datetime
+}
+
+entity "Comment" {
+    id: int
+    post_id: int
+    user_id: int
+    comment_id: int
+    content: text
+    comment_date: datetime
+}
+
+entity "Statistic" {
+    id: int
+    post_id: int
+    view_count: bigint
+    like_count: bigint
+    comment_count: bigint
+}
+
+entity "Like" {
+    user_id: int
+    post_id: int
+    comment_id: int
+}
+
+User ||--o{ Post : "creates"
+Post ||--o{ Comment: "has"
+User ||--o{ Comment: "creates"
+Post ||--|| Statistic: "gathered for"
+Like ||--|| Statistic: "gathered for"
+Comment ||--|| Statistic: "gathered for"
+User ||--o{ Like : "creates"
+
+@enduml

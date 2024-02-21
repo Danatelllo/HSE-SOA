@@ -1,0 +1,37 @@
+@startuml
+skinparam rectangle {
+    BackgroundColor DodgerBlue
+    BorderColor Black
+    FontColor White
+}
+skinparam database {
+    BackgroundColor RoyalBlue
+    BorderColor Black
+    FontColor White
+}
+skinparam component {
+    BackgroundColor Green
+    BorderColor Black
+    FontColor White
+}
+skinparam agent {
+    BackgroundColor Gold
+    BorderColor Black
+    FontColor Black
+}
+
+rectangle "👥 Users" as Users
+component "⚙API && 🔐 Authentication\nProcess requests" as API
+database "💾 Users Database" as UsersDB
+database "💾 Posts Database" as PostsDB
+database "💾 Statistic Database" as StatisticDb
+component "⚙ Statistic \nservice" as StatisticService
+component "⚙ Posts and comments \nservice" as PostAndComments
+
+Users -[#0000FF]-> API : "Interacts"
+API -[#0000FF]-> UsersDB : "Queries user data"
+API -[#0000FF]-> StatisticService : "Sends statistic queries"
+API -[#0000FF]-> PostAndComments : "post and comments service"
+PostAndComments --> PostsDB
+StatisticService --> StatisticDb
+@enduml

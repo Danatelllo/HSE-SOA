@@ -1,0 +1,41 @@
+@startuml
+skinparam rectangle {
+    BackgroundColor DodgerBlue
+    BorderColor Black
+    FontColor White
+}
+skinparam database {
+    BackgroundColor RoyalBlue
+    BorderColor Black
+    FontColor White
+}
+skinparam queue {
+    BackgroundColor SkyBlue
+    BorderColor Black
+    FontColor White
+}
+skinparam component {
+    BackgroundColor LightSteelBlue
+    BorderColor Black
+    FontColor White
+}
+
+rectangle "API Gateway\n(Main Service)\ngo" as APIGateway
+database "PostgreSQL\n(Auth DB)" as AuthDB
+rectangle "Posts & Comments\nService\ngo" as PostsService
+database "PostgreSQL\n(Posts DB)" as PostsDB
+rectangle "Statistics\ngRPC/go" as StatsService
+database "ClickHouse\n(Stats DB)" as StatsDB
+
+queue "Message Broker\n(Kafka)" as Kafka
+
+APIGateway -[#0000FF]-> Kafka
+APIGateway -[#0000FF]-> PostsService : "gRPC"
+
+APIGateway --> AuthDB : "reads/writes\nuser data"
+PostsService --> PostsDB : "stores posts &\ncomments"
+StatsService --> StatsDB : "stores stats data"
+
+Kafka -[#0000FF]-> StatsService : "Consumes events"
+
+@enduml
