@@ -1,0 +1,151 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API Server for TodoList Application",
+        "title": "Todo App API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8081",
+    "basePath": "/",
+    "paths": {
+        "/register_user": {
+            "post": {
+                "description": "Регистрация нового пользователя с вводом обязательных и необязательных данных.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Регистрация нового пользователя",
+                "operationId": "register-user",
+                "parameters": [
+                    {
+                        "description": "Информация о пользователе",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.RequestRegister"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Пользователь успешно создан",
+                        "schema": {
+                            "$ref": "#/definitions/model.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Не проходит валидация пользователя"
+                    }
+                }
+            }
+        },
+        "/user_login": {
+            "post": {
+                "description": "Вход для пользователя с login и password.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Вход для пользователя",
+                "operationId": "user-login",
+                "parameters": [
+                    {
+                        "description": "Информация для входа",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Пользователь авторизован",
+                        "schema": {
+                            "type": "token"
+                        }
+                    },
+                    "400": {
+                        "description": "Логин не найден"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.User": {
+            "type": "object",
+            "properties": {
+                "birthday": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phonenumber": {
+                    "type": "string"
+                },
+                "surname": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "login": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.RequestRegister": {
+            "type": "object",
+            "properties": {
+                "birthday": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phonenumber": {
+                    "type": "string"
+                },
+                "surname": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

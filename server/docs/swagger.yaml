@@ -1,0 +1,100 @@
+basePath: /
+definitions:
+  model.User:
+    properties:
+      birthday:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      login:
+        type: string
+      name:
+        type: string
+      phonenumber:
+        type: string
+      surname:
+        type: string
+    type: object
+  storage.LoginRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  storage.RequestRegister:
+    properties:
+      birthday:
+        type: string
+      email:
+        type: string
+      login:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phonenumber:
+        type: string
+      surname:
+        type: string
+    type: object
+host: localhost:8081
+info:
+  contact: {}
+  description: API Server for TodoList Application
+  title: Todo App API
+  version: "1.0"
+paths:
+  /register_user:
+    post:
+      consumes:
+      - application/json
+      description: Регистрация нового пользователя с вводом обязательных и необязательных
+        данных.
+      operationId: register-user
+      parameters:
+      - description: Информация о пользователе
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/storage.RequestRegister'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь успешно создан
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: Не проходит валидация пользователя
+      summary: Регистрация нового пользователя
+  /user_login:
+    post:
+      consumes:
+      - application/json
+      description: Вход для пользователя с login и password.
+      operationId: user-login
+      parameters:
+      - description: Информация для входа
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/storage.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь авторизован
+          schema:
+            type: token
+        "400":
+          description: Логин не найден
+        "500":
+          description: Внутренняя ошибка сервера
+      summary: Вход для пользователя
+swagger: "2.0"
