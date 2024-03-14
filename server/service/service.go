@@ -25,7 +25,7 @@ type RestApiServer struct {
 }
 
 type Claims struct {
-	Userlogin string `json:"username"`
+	UserLogin string `json:"username"`
 	jwt.RegisteredClaims
 }
 
@@ -116,13 +116,13 @@ func FillUserFromRequest(req *storage.RequestRegister) *model.User {
 // @ID user-login
 // @Accept  json
 // @Produce  json
-// @Param   user  body storage.LoginRequest  true  "Информация для входа"
+// @Param   user  body storage.LoginRequest  true  "Информация для входа. Время в формате 1990-01-01T00:00:00Z"
 // @Success 201  token   "Пользователь авторизован"
 // @Failure 400  "Паспорт не совпадает"
 // @Failure 400  "Логин не найден"
 // @Failure 500  "Внутренняя ошибка сервера"
 // @Router /user_login [post]
-// @Example Request { "json" : {"login": "userlogin", "password": "password123"} }
+// @Example Request { "login": "userlogin", "password": "password123" }
 func (server *RestApiServer) HandleUserLogin() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := &storage.LoginRequest{}
@@ -143,7 +143,7 @@ func (server *RestApiServer) HandleUserLogin() http.HandlerFunc {
 
 		expirationTime := time.Now().Add(30 * time.Minute)
 		claims := &Claims{
-			Userlogin: user.UserLogin,
+			UserLogin: user.UserLogin,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(expirationTime),
 			},
@@ -167,12 +167,11 @@ func (server *RestApiServer) HandleUserLogin() http.HandlerFunc {
 // @ID register-user
 // @Accept  json
 // @Produce  json
-// @Param   user  body storage.RequestRegister  true  "Информация о пользователе"
+// @Param   user  body storage.RequestRegister  true  "Информация о пользователе. Время в формате 1990-01-01T00:00:00Z"
 // @Success 201  {object}   model.User  "Пользователь успешно создан"
 // @Failure 400  "Пользователь с таким логином или email уже существует"
 // @Failure 400  "Не проходит валидация пользователя"
 // @Router /register_user [post]
-// @Example Request { "json" : { "email": "user@example.com", "login": "userlogin", "password": "password123", "name": "John", "surname": "Doe", "phonenumber": "1234567890", "token": "youraccesstoken", "birthday": "1990-01-01T00:00:00Z" } }
 func (server *RestApiServer) HandleRegisterUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := &storage.RequestRegister{}
@@ -198,19 +197,27 @@ func (server *RestApiServer) HandleRegisterUser() http.HandlerFunc {
 	}
 }
 
+// @Summary Обновление полей пользователя
+// @Description Обновление полей пользователя с вводом обязательных и необязательных данных.
+// @ID update-user
+// @Accept  json
+// @Produce  json
+// @Param   user  body storage.RequestUpdate  true  "Токен и информация, которую пользователь хочет изменить. Время в формате 1990-01-01T00:00:00Z"
+// @Success 201  {object}   model.User  "Данные пользователя обновлен"
+// @Failure 403  "Нельзя сменить логин или email"
+// @Failure 400  "Неверный токен"
+// @Router /update_user [put]
 func (server *RestApiServer) HandleUpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := &storage.RequestUpdate{}
-		print("puk")
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-			server.HandleError(w, r, http.StatusBadRequest, errors.New("Can not parse request"))
+			server.HandleError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		if req.UserLogin != "" || req.UserPassword != "" {
 			server.HandleError(w, r, http.StatusForbidden, errors.New("Change password or login deprecated"))
 			return
 		}
-		print("puk")
 		claims := &Claims{}
 
 		tkn, err := jwt.ParseWithClaims(req.Token, claims, func(token *jwt.Token) (any, error) {
@@ -226,9 +233,7 @@ func (server *RestApiServer) HandleUpdateUser() http.HandlerFunc {
 			server.HandleError(w, r, http.StatusBadRequest, errors.New("bad token"))
 			return
 		}
-		print("puk")
-
-		user, err := server.Storage.User().FindUserByLogin(req.UserLogin)
+		user, err := server.Storage.User().FindUserByLogin(claims.UserLogin)
 		if err != nil {
 			server.HandleError(w, r, http.StatusBadRequest, err)
 			return

@@ -28,7 +28,7 @@ const docTemplate = `{
                 "operationId": "register-user",
                 "parameters": [
                     {
-                        "description": "Информация о пользователе",
+                        "description": "Информация о пользователе. Время в формате 1990-01-01T00:00:00Z",
                         "name": "user",
                         "in": "body",
                         "required": true,
@@ -50,6 +50,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/update_user": {
+            "put": {
+                "description": "Обновление полей пользователя с вводом обязательных и необязательных данных.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Обновление полей пользователя",
+                "operationId": "update-user",
+                "parameters": [
+                    {
+                        "description": "Токен и информация, которую пользователь хочет изменить. Время в формате 1990-01-01T00:00:00Z",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.RequestUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Данные пользователя обновлен",
+                        "schema": {
+                            "$ref": "#/definitions/model.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный токен"
+                    },
+                    "403": {
+                        "description": "Нельзя сменить логин или email"
+                    }
+                }
+            }
+        },
         "/user_login": {
             "post": {
                 "description": "Вход для пользователя с login и password.",
@@ -63,7 +101,7 @@ const docTemplate = `{
                 "operationId": "user-login",
                 "parameters": [
                     {
-                        "description": "Информация для входа",
+                        "description": "Информация для входа. Время в формате 1990-01-01T00:00:00Z",
                         "name": "user",
                         "in": "body",
                         "required": true,
@@ -149,6 +187,35 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "surname": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.RequestUpdate": {
+            "type": "object",
+            "properties": {
+                "birthday": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phonenumber": {
+                    "type": "string"
+                },
+                "surname": {
+                    "type": "string"
+                },
+                "token": {
                     "type": "string"
                 }
             }

@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"time"
 
-	validation "github.com/go-ozzo/ozzo-validation"
-	"github.com/go-ozzo/ozzo-validation/is"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -42,12 +40,6 @@ func CreateUserTable(db *sql.DB) error {
 
 	return nil
 
-}
-
-func (u *User) Validate() error {
-	return validation.ValidateStruct(u,
-		validation.Field(&u.UserEmail, validation.Required, is.Email),
-		validation.Field(&u.UserPassword, validation.Required, is.Alphanumeric))
 }
 
 func (u *User) IsPasswordEqual(password string) bool {

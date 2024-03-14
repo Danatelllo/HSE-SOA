@@ -41,6 +41,25 @@ definitions:
       surname:
         type: string
     type: object
+  storage.RequestUpdate:
+    properties:
+      birthday:
+        type: string
+      email:
+        type: string
+      login:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phonenumber:
+        type: string
+      surname:
+        type: string
+      token:
+        type: string
+    type: object
 host: localhost:8081
 info:
   contact: {}
@@ -56,7 +75,7 @@ paths:
         данных.
       operationId: register-user
       parameters:
-      - description: Информация о пользователе
+      - description: Информация о пользователе. Время в формате 1990-01-01T00:00:00Z
         in: body
         name: user
         required: true
@@ -72,6 +91,33 @@ paths:
         "400":
           description: Не проходит валидация пользователя
       summary: Регистрация нового пользователя
+  /update_user:
+    put:
+      consumes:
+      - application/json
+      description: Обновление полей пользователя с вводом обязательных и необязательных
+        данных.
+      operationId: update-user
+      parameters:
+      - description: Токен и информация, которую пользователь хочет изменить. Время
+          в формате 1990-01-01T00:00:00Z
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/storage.RequestUpdate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Данные пользователя обновлен
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: Неверный токен
+        "403":
+          description: Нельзя сменить логин или email
+      summary: Обновление полей пользователя
   /user_login:
     post:
       consumes:
@@ -79,7 +125,7 @@ paths:
       description: Вход для пользователя с login и password.
       operationId: user-login
       parameters:
-      - description: Информация для входа
+      - description: Информация для входа. Время в формате 1990-01-01T00:00:00Z
         in: body
         name: user
         required: true

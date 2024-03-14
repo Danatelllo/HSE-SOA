@@ -20,7 +20,6 @@ func New(config *Config) *Storage {
 }
 
 func (storage *Storage) ConnnectToStorage() error {
-	print("sadfasdf")
 	db, err := sql.Open("postgres", storage.Config.DatabaseUrl)
 	if err != nil {
 		return err
@@ -29,7 +28,6 @@ func (storage *Storage) ConnnectToStorage() error {
 	if err := db.Ping(); err != nil {
 		return err
 	}
-	print("sadfasdf")
 
 	storage.DB = db
 
