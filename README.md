@@ -16,7 +16,8 @@
 
 1. Склонируйте репозиторий с кодом сервиса:
 
-git clone https://github.com/Danatelllo/HSE-SOA.git
+    git clone https://github.com/Danatelllo/HSE-SOA.git
+
 
 2. Перейдите на ветку с сервисом авторизации:
 
@@ -27,6 +28,7 @@ git checkout rest-api-server
 в папке ~/soa 
 
 docker-compose build
+
 docker-compose up 
 
 4. В браузере перейдите по ссылке:
