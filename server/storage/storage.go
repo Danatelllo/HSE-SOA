@@ -1,15 +1,15 @@
 package storage
 
 import (
+	"database/sql"
 	"main_service/model"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	_ "github.com/lib/pq"
 )
 
 type Storage struct {
 	Config         *Config
-	DB             *gorm.DB
+	DB             *sql.DB
 	UserRepository *UserRepository
 }
 
@@ -19,29 +19,30 @@ func New(config *Config) *Storage {
 	}
 }
 
-func (storage *Storage) ConnectToStorage() error {
-	db, err := gorm.Open(postgres.Open(storage.Config.DatabaseUrl), &gorm.Config{})
+func (storage *Storage) ConnnectToStorage() error {
+	db, err := sql.Open("postgres", storage.Config.DatabaseUrl)
 	if err != nil {
 		return err
 	}
 
-	if !db.Migrator().HasTable(&model.User{}) {
-		err = db.Debug().Migrator().CreateTable(&model.User{})
-		if err != nil {
-			return err
-		}
+	if err := db.Ping(); err != nil {
+		return err
 	}
 
 	storage.DB = db
-	return nil
-}
 
-func (storage *Storage) CloseConnection() error {
-	sqlDB, err := storage.DB.DB()
+	err = model.CreateUserTable(storage.DB)
+
 	if err != nil {
 		return err
 	}
-	return sqlDB.Close()
+
+	return nil
+
+}
+
+func (s *Storage) CloseConnection() {
+	return
 }
 
 func (storage *Storage) User() *UserRepository {
@@ -50,7 +51,7 @@ func (storage *Storage) User() *UserRepository {
 	}
 
 	storage.UserRepository = &UserRepository{
-		DB: storage.DB,
+		storage: storage,
 	}
 	return storage.UserRepository
 }
