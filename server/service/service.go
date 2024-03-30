@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"github.com/swaggo/http-swagger/v2"
+	"gorm.io/gorm"
 )
 
 type RestApiServer struct {
@@ -67,7 +68,7 @@ func (server *RestApiServer) Start() error {
 
 func (server *RestApiServer) configureStorage() error {
 	storage := storage.New(server.Config.StorageConfig)
-	if err := storage.ConnnectToStorage(); err != nil {
+	if err := storage.ConnectToStorage(); err != nil {
 		return err
 	}
 
@@ -180,11 +181,10 @@ func (server *RestApiServer) HandleRegisterUser() http.HandlerFunc {
 			return
 		}
 
-		user, _ := server.Storage.User().FindUserByLogin(req.UserEmail)
+		user, err := server.Storage.User().FindUserByLogin(req.UserEmail)
 
-		if user != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			server.HandleError(w, r, http.StatusBadRequest, errors.New("user already exists"))
-			return
 		}
 
 		user = FillUserFromRequest(req)
