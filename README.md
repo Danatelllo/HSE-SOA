@@ -34,3 +34,4 @@ docker-compose up
 4. В браузере перейдите по ссылке:
 
 http://localhost:8081/swagger/index.html#/default
+
