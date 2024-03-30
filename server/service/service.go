@@ -67,7 +67,7 @@ func (server *RestApiServer) Start() error {
 
 func (server *RestApiServer) configureStorage() error {
 	storage := storage.New(server.Config.StorageConfig)
-	if err := storage.ConnnectToStorage(); err != nil {
+	if err := storage.ConnectToStorage(); err != nil {
 		return err
 	}
 
