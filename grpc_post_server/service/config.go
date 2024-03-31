@@ -2,14 +2,14 @@ package service
 
 import "grpc_post_server/storage"
 
-type GrpcPostServerConfig struct {
+type GrpcTaskServerConfig struct {
 	Port          string
 	StorageConfig *storage.StorageConfig
 }
 
-func NewRestApiConfig() *GrpcPostServerConfig {
-	return &GrpcPostServerConfig{
-		Port:          ":8081",
+func NewGrpcTaskServerConfig() *GrpcTaskServerConfig {
+	return &GrpcTaskServerConfig{
+		Port:          "0.0.0.0:8080",
 		StorageConfig: storage.NewConfig(),
 	}
 }

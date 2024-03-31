@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"main_service/model"
+	"server/model"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

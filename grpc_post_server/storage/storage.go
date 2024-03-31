@@ -1,14 +1,13 @@
 package storage
 
 import (
-	"log"
 	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-type Post struct {
+type Task struct {
 	gorm.Model
 	Login string
 	Title string
@@ -17,15 +16,19 @@ type Post struct {
 }
 
 func ConnnectToStorage(Config *StorageConfig) (*gorm.DB, error) {
-	dbMaster, err := gorm.Open(postgres.Open(Config.DatabaseUrl), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(Config.DatabaseUrl), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
 		return nil, err
 	}
 
-	dbMaster.AutoMigrate(&Post{})
+	if !db.Migrator().HasTable(&Task{}) {
+		err = db.Debug().Migrator().CreateTable(Task{})
+		if err != nil {
+			return nil, err
+		}
+	}
 
-	return dbMaster, nil
+	return db, nil
 }
 
 func New(Config *StorageConfig) (*gorm.DB, error) {

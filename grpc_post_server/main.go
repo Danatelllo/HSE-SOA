@@ -6,8 +6,8 @@ import (
 )
 
 func main() {
-	config := service.NewRestApiConfig()
-	s := service.NewRestApiServer(config)
+	config := service.NewGrpcTaskServerConfig()
+	s := service.NewGrpcTaskServer(config)
 	if error := s.Start(); error != nil {
 		log.Fatal(error)
 	}

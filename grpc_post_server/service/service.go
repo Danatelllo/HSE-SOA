@@ -8,31 +8,29 @@ import (
 	"grpc_post_server/storage"
 	"net"
 
-	"github.com/golang/protobuf/ptypes"
-	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 )
 
-type GrpcPostServer struct {
-	Config  *GrpcPostServerConfig
+type GrpcTaskServer struct {
+	pb.UnimplementedTaskServerServer
+	Config  *GrpcTaskServerConfig
 	Logger  *logrus.Logger
-	Router  *mux.Router
 	Storage *gorm.DB
-	pb.UnimplementedPostServerServer
 }
 
-func NewRestApiServer(config *GrpcPostServerConfig) *GrpcPostServer {
-	return &GrpcPostServer{
+func NewGrpcTaskServer(config *GrpcTaskServerConfig) *GrpcTaskServer {
+	return &GrpcTaskServer{
 		Config: config,
 		Logger: logrus.New(),
-		Router: mux.NewRouter(),
 	}
 }
 
-func (server *GrpcPostServer) ConfigureStorage() error {
+func (server *GrpcTaskServer) ConfigureStorage() error {
 	storage, err := storage.New(server.Config.StorageConfig)
 	if err != nil {
 		return err
@@ -43,57 +41,57 @@ func (server *GrpcPostServer) ConfigureStorage() error {
 	return nil
 }
 
-func (s *GrpcPostServer) CreatePost(ctx context.Context, in *pb.CreatePostRequest) (*pb.CreatePostResponse, error) {
-	post := storage.Post{
+func (s *GrpcTaskServer) CreateTask(ctx context.Context, in *pb.CreateTaskRequest) (*pb.CreateTaskResponse, error) {
+	Task := storage.Task{
 		Login: in.Login,
 		Title: in.Title,
 		Body:  in.Body,
 		Date:  in.Date.AsTime(),
 	}
 
-	if err := s.Storage.Create(&post).Error; err != nil {
-		s.Logger.Errorf("Failed to create post: %v", err)
+	if err := s.Storage.Create(&Task).Error; err != nil {
+		s.Logger.Errorf("Failed to create Task: %v", err)
 		return nil, err
 	}
 
-	return &pb.CreatePostResponse{PostId: fmt.Sprintf("%d", post.ID)}, nil
+	return &pb.CreateTaskResponse{TaskId: fmt.Sprintf("%d", Task.ID)}, nil
 }
 
-func (s *GrpcPostServer) DeletePost(ctx context.Context, in *pb.DeletePostRequest) (*emptypb.Empty, error) {
-	if err := s.Storage.Delete(&storage.Post{}, "id = ?", in.GetPostId()).Error; err != nil {
+func (s *GrpcTaskServer) DeleteTask(ctx context.Context, in *pb.DeleteTaskRequest) (*emptypb.Empty, error) {
+	if err := s.Storage.Delete(&storage.Task{}, "id = ?", in.GetTaskId()).Error; err != nil {
 		return nil, err
 	}
 
 	return &emptypb.Empty{}, nil
 }
 
-func (s *GrpcPostServer) UpdatePost(ctx context.Context, in *pb.UpdatePostRequest) (*emptypb.Empty, error) {
-	var post storage.Post
-	if err := s.Storage.First(&post, "id = ?", in.GetPostId()).Error; err != nil {
+func (s *GrpcTaskServer) UpdateTask(ctx context.Context, in *pb.UpdateTaskRequest) (*emptypb.Empty, error) {
+	var Task storage.Task
+	if err := s.Storage.First(&Task, "id = ?", in.GetTaskId()).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("Failed to find post with ID: %s", in.GetPostId())
+			return nil, fmt.Errorf("Failed to find Task with ID: %s", in.GetTaskId())
 		}
 		return nil, err
 	}
 
 	if in.GetTitle() != "" {
-		post.Title = in.GetTitle()
+		Task.Title = in.GetTitle()
 	}
 	if in.GetBody() != "" {
-		post.Body = in.GetBody()
+		Task.Body = in.GetBody()
 	}
-	post.Date = in.GetDate().AsTime()
-	if err := s.Storage.Save(&post).Error; err != nil {
+	Task.Date = in.GetDate().AsTime()
+	if err := s.Storage.Save(&Task).Error; err != nil {
 		return nil, err
 	}
 
 	return &emptypb.Empty{}, nil
 }
 
-func (server *GrpcPostServer) Start() error {
-	server.Logger.Info("starting GrpcPostServer")
+func (server *GrpcTaskServer) Start() error {
+	server.Logger.Info("starting GrpcTaskServer")
 
-	server.Logger.Info("configure Grpc Post DB")
+	server.Logger.Info("configure Grpc Task DB")
 	if err := server.ConfigureStorage(); err != nil {
 		return err
 	}
@@ -104,36 +102,62 @@ func (server *GrpcPostServer) Start() error {
 		return err
 	}
 
-	s := grpc.NewServer()
-	pb.RegisterPostServerServer(s, &GrpcPostServer{})
+	grpcServer := grpc.NewServer()
+	reflection.Register(grpcServer)
+
+	pb.RegisterTaskServerServer(grpcServer, server)
 	server.Logger.Info("Server listening at", lis.Addr())
-	if err := s.Serve(lis); err != nil {
+
+	if err := grpcServer.Serve(lis); err != nil {
 		server.Logger.Fatalf("failed to serve: %v", err)
 		return err
 	}
+
 	return nil
+
 }
 
-func (s *GrpcPostServer) GetPost(ctx context.Context, in *pb.GetPostRequest) (*pb.GetPostResponse, error) {
-	var post storage.Post
-	if err := s.Storage.First(&post, "id = ?", in.GetPostId()).Error; err != nil {
+func (s *GrpcTaskServer) GetTask(ctx context.Context, in *pb.GetTaskRequest) (*pb.GetTaskResponse, error) {
+	var Task storage.Task
+	if err := s.Storage.First(&Task, "id = ?", in.GetTaskId()).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("Failed to find post with ID: %s", in.GetPostId())
+			return nil, fmt.Errorf("Failed to find Task with ID: %s", in.GetTaskId())
 		}
 		s.Logger.Errorf("Failed to found: %v", err)
 		return nil, err
 	}
 
-	date, err := ptypes.TimestampProto(post.Date)
-	if err != nil {
-		s.Logger.Errorf("Failed to convert time to proto time: %v", err)
-		return nil, err
+	date := timestamppb.New(Task.Date)
+
+	return &pb.GetTaskResponse{
+		Login: Task.Login,
+		Title: Task.Title,
+		Body:  Task.Body,
+		Date:  date,
+	}, nil
+}
+
+func (s *GrpcTaskServer) GetListTasks(ctx context.Context, req *pb.GetListTasksRequest) (*pb.GetListTasksResponse, error) {
+	login := req.GetLogin()
+
+	var tasks []*storage.Task
+	result := s.Storage.Where("login = ?", login).Limit(int(req.GetLimit())).Offset(int(req.GetOffset())).Find(&tasks)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
-	return &pb.GetPostResponse{
-		Login: post.Login,
-		Title: post.Title,
-		Body:  post.Body,
-		Date:  date,
+	var taskResponses []*pb.GetTaskResponse
+	for _, task := range tasks {
+		taskResponse := &pb.GetTaskResponse{
+			Login: task.Login,
+			Title: task.Title,
+			Body:  task.Body,
+			Date:  timestamppb.New(task.Date),
+		}
+		taskResponses = append(taskResponses, taskResponse)
+	}
+
+	return &pb.GetListTasksResponse{
+		Tasks: taskResponses,
 	}, nil
 }

@@ -6,6 +6,6 @@ type StorageConfig struct {
 
 func NewConfig() *StorageConfig {
 	return &StorageConfig{
-		DatabaseUrl: "host=db dbname=GrpcPostServer sslmode=disable user=chebryakov password=password",
+		DatabaseUrl: "host=post_db dbname=GrpcPostServer sslmode=disable user=chebryakov password=password",
 	}
 }

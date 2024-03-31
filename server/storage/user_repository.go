@@ -2,7 +2,7 @@ package storage
 
 import (
 	"errors"
-	"main_service/model"
+	"server/model"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -33,6 +33,48 @@ type RequestRegister struct {
 type LoginRequest struct {
 	UserLogin    string `json:"login"`
 	UserPassword string `json:"password"`
+}
+
+type CreateTask struct {
+	Title string    `json:"title"`
+	Body  string    `json:"body"`
+	Date  time.Time `json:"-"`
+	Token string    `json:"token"`
+}
+
+type GetTaskRequest struct {
+	TaskId string `json:"task_id"`
+	Token  string `json:"token"`
+}
+
+type GetTaskResponse struct {
+	Login string    `json:"login"`
+	Title string    `json:"title"`
+	Body  string    `json:"body"`
+	Date  time.Time `json:"-"`
+}
+
+type DeleteTaskRequest struct {
+	TaskId string `json:"task_id"`
+	Token  string `json:"token"`
+}
+
+type UpdateTaskRequest struct {
+	TaskId string    `json:"task_id"`
+	Title  string    `json:"title"`
+	Body   string    `json:"body"`
+	Date   time.Time `json:"-"`
+	Token  string    `json:"token"`
+}
+
+type GetListTasks struct {
+	Limit  int32  `json:"limit"`
+	Offset int32  `json:"offset"`
+	Token  string `json:"token"`
+}
+
+type CreateTaskResponse struct {
+	TaskId string `json:"task_id"`
 }
 
 type UserRepository struct {

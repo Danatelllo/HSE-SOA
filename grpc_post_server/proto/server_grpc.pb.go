@@ -20,267 +20,239 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	PostServer_CreatePost_FullMethodName   = "/grpc_post_service.PostServer/CreatePost"
-	PostServer_GetPost_FullMethodName      = "/grpc_post_service.PostServer/GetPost"
-	PostServer_DeletePost_FullMethodName   = "/grpc_post_service.PostServer/DeletePost"
-	PostServer_UpdatePost_FullMethodName   = "/grpc_post_service.PostServer/UpdatePost"
-	PostServer_GetListPosts_FullMethodName = "/grpc_post_service.PostServer/GetListPosts"
+	TaskServer_CreateTask_FullMethodName   = "/grpc_Task_service.TaskServer/CreateTask"
+	TaskServer_GetTask_FullMethodName      = "/grpc_Task_service.TaskServer/GetTask"
+	TaskServer_DeleteTask_FullMethodName   = "/grpc_Task_service.TaskServer/DeleteTask"
+	TaskServer_UpdateTask_FullMethodName   = "/grpc_Task_service.TaskServer/UpdateTask"
+	TaskServer_GetListTasks_FullMethodName = "/grpc_Task_service.TaskServer/GetListTasks"
 )
 
-// PostServerClient is the client API for PostServer service.
+// TaskServerClient is the client API for TaskServer service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type PostServerClient interface {
-	CreatePost(ctx context.Context, in *CreatePostRequest, opts ...grpc.CallOption) (*CreatePostResponse, error)
-	GetPost(ctx context.Context, in *GetPostRequest, opts ...grpc.CallOption) (*GetPostResponse, error)
-	DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	UpdatePost(ctx context.Context, in *UpdatePostRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	GetListPosts(ctx context.Context, in *GetListPostsRequest, opts ...grpc.CallOption) (PostServer_GetListPostsClient, error)
+type TaskServerClient interface {
+	CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*CreateTaskResponse, error)
+	GetTask(ctx context.Context, in *GetTaskRequest, opts ...grpc.CallOption) (*GetTaskResponse, error)
+	DeleteTask(ctx context.Context, in *DeleteTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	UpdateTask(ctx context.Context, in *UpdateTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	GetListTasks(ctx context.Context, in *GetListTasksRequest, opts ...grpc.CallOption) (*GetListTasksResponse, error)
 }
 
-type postServerClient struct {
+type taskServerClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewPostServerClient(cc grpc.ClientConnInterface) PostServerClient {
-	return &postServerClient{cc}
+func NewTaskServerClient(cc grpc.ClientConnInterface) TaskServerClient {
+	return &taskServerClient{cc}
 }
 
-func (c *postServerClient) CreatePost(ctx context.Context, in *CreatePostRequest, opts ...grpc.CallOption) (*CreatePostResponse, error) {
-	out := new(CreatePostResponse)
-	err := c.cc.Invoke(ctx, PostServer_CreatePost_FullMethodName, in, out, opts...)
+func (c *taskServerClient) CreateTask(ctx context.Context, in *CreateTaskRequest, opts ...grpc.CallOption) (*CreateTaskResponse, error) {
+	out := new(CreateTaskResponse)
+	err := c.cc.Invoke(ctx, TaskServer_CreateTask_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *postServerClient) GetPost(ctx context.Context, in *GetPostRequest, opts ...grpc.CallOption) (*GetPostResponse, error) {
-	out := new(GetPostResponse)
-	err := c.cc.Invoke(ctx, PostServer_GetPost_FullMethodName, in, out, opts...)
+func (c *taskServerClient) GetTask(ctx context.Context, in *GetTaskRequest, opts ...grpc.CallOption) (*GetTaskResponse, error) {
+	out := new(GetTaskResponse)
+	err := c.cc.Invoke(ctx, TaskServer_GetTask_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *postServerClient) DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *taskServerClient) DeleteTask(ctx context.Context, in *DeleteTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, PostServer_DeletePost_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, TaskServer_DeleteTask_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *postServerClient) UpdatePost(ctx context.Context, in *UpdatePostRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *taskServerClient) UpdateTask(ctx context.Context, in *UpdateTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, PostServer_UpdatePost_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, TaskServer_UpdateTask_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *postServerClient) GetListPosts(ctx context.Context, in *GetListPostsRequest, opts ...grpc.CallOption) (PostServer_GetListPostsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &PostServer_ServiceDesc.Streams[0], PostServer_GetListPosts_FullMethodName, opts...)
+func (c *taskServerClient) GetListTasks(ctx context.Context, in *GetListTasksRequest, opts ...grpc.CallOption) (*GetListTasksResponse, error) {
+	out := new(GetListTasksResponse)
+	err := c.cc.Invoke(ctx, TaskServer_GetListTasks_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &postServerGetListPostsClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
+	return out, nil
 }
 
-type PostServer_GetListPostsClient interface {
-	Recv() (*GetPostResponse, error)
-	grpc.ClientStream
-}
-
-type postServerGetListPostsClient struct {
-	grpc.ClientStream
-}
-
-func (x *postServerGetListPostsClient) Recv() (*GetPostResponse, error) {
-	m := new(GetPostResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-// PostServerServer is the server API for PostServer service.
-// All implementations must embed UnimplementedPostServerServer
+// TaskServerServer is the server API for TaskServer service.
+// All implementations must embed UnimplementedTaskServerServer
 // for forward compatibility
-type PostServerServer interface {
-	CreatePost(context.Context, *CreatePostRequest) (*CreatePostResponse, error)
-	GetPost(context.Context, *GetPostRequest) (*GetPostResponse, error)
-	DeletePost(context.Context, *DeletePostRequest) (*emptypb.Empty, error)
-	UpdatePost(context.Context, *UpdatePostRequest) (*emptypb.Empty, error)
-	GetListPosts(*GetListPostsRequest, PostServer_GetListPostsServer) error
-	mustEmbedUnimplementedPostServerServer()
+type TaskServerServer interface {
+	CreateTask(context.Context, *CreateTaskRequest) (*CreateTaskResponse, error)
+	GetTask(context.Context, *GetTaskRequest) (*GetTaskResponse, error)
+	DeleteTask(context.Context, *DeleteTaskRequest) (*emptypb.Empty, error)
+	UpdateTask(context.Context, *UpdateTaskRequest) (*emptypb.Empty, error)
+	GetListTasks(context.Context, *GetListTasksRequest) (*GetListTasksResponse, error)
+	mustEmbedUnimplementedTaskServerServer()
 }
 
-// UnimplementedPostServerServer must be embedded to have forward compatible implementations.
-type UnimplementedPostServerServer struct {
+// UnimplementedTaskServerServer must be embedded to have forward compatible implementations.
+type UnimplementedTaskServerServer struct {
 }
 
-func (UnimplementedPostServerServer) CreatePost(context.Context, *CreatePostRequest) (*CreatePostResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreatePost not implemented")
+func (UnimplementedTaskServerServer) CreateTask(context.Context, *CreateTaskRequest) (*CreateTaskResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateTask not implemented")
 }
-func (UnimplementedPostServerServer) GetPost(context.Context, *GetPostRequest) (*GetPostResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetPost not implemented")
+func (UnimplementedTaskServerServer) GetTask(context.Context, *GetTaskRequest) (*GetTaskResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTask not implemented")
 }
-func (UnimplementedPostServerServer) DeletePost(context.Context, *DeletePostRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeletePost not implemented")
+func (UnimplementedTaskServerServer) DeleteTask(context.Context, *DeleteTaskRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteTask not implemented")
 }
-func (UnimplementedPostServerServer) UpdatePost(context.Context, *UpdatePostRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdatePost not implemented")
+func (UnimplementedTaskServerServer) UpdateTask(context.Context, *UpdateTaskRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateTask not implemented")
 }
-func (UnimplementedPostServerServer) GetListPosts(*GetListPostsRequest, PostServer_GetListPostsServer) error {
-	return status.Errorf(codes.Unimplemented, "method GetListPosts not implemented")
+func (UnimplementedTaskServerServer) GetListTasks(context.Context, *GetListTasksRequest) (*GetListTasksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetListTasks not implemented")
 }
-func (UnimplementedPostServerServer) mustEmbedUnimplementedPostServerServer() {}
+func (UnimplementedTaskServerServer) mustEmbedUnimplementedTaskServerServer() {}
 
-// UnsafePostServerServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to PostServerServer will
+// UnsafeTaskServerServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TaskServerServer will
 // result in compilation errors.
-type UnsafePostServerServer interface {
-	mustEmbedUnimplementedPostServerServer()
+type UnsafeTaskServerServer interface {
+	mustEmbedUnimplementedTaskServerServer()
 }
 
-func RegisterPostServerServer(s grpc.ServiceRegistrar, srv PostServerServer) {
-	s.RegisterService(&PostServer_ServiceDesc, srv)
+func RegisterTaskServerServer(s grpc.ServiceRegistrar, srv TaskServerServer) {
+	s.RegisterService(&TaskServer_ServiceDesc, srv)
 }
 
-func _PostServer_CreatePost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreatePostRequest)
+func _TaskServer_CreateTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PostServerServer).CreatePost(ctx, in)
+		return srv.(TaskServerServer).CreateTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PostServer_CreatePost_FullMethodName,
+		FullMethod: TaskServer_CreateTask_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PostServerServer).CreatePost(ctx, req.(*CreatePostRequest))
+		return srv.(TaskServerServer).CreateTask(ctx, req.(*CreateTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PostServer_GetPost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetPostRequest)
+func _TaskServer_GetTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PostServerServer).GetPost(ctx, in)
+		return srv.(TaskServerServer).GetTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PostServer_GetPost_FullMethodName,
+		FullMethod: TaskServer_GetTask_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PostServerServer).GetPost(ctx, req.(*GetPostRequest))
+		return srv.(TaskServerServer).GetTask(ctx, req.(*GetTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PostServer_DeletePost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeletePostRequest)
+func _TaskServer_DeleteTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PostServerServer).DeletePost(ctx, in)
+		return srv.(TaskServerServer).DeleteTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PostServer_DeletePost_FullMethodName,
+		FullMethod: TaskServer_DeleteTask_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PostServerServer).DeletePost(ctx, req.(*DeletePostRequest))
+		return srv.(TaskServerServer).DeleteTask(ctx, req.(*DeleteTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PostServer_UpdatePost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdatePostRequest)
+func _TaskServer_UpdateTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PostServerServer).UpdatePost(ctx, in)
+		return srv.(TaskServerServer).UpdateTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PostServer_UpdatePost_FullMethodName,
+		FullMethod: TaskServer_UpdateTask_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PostServerServer).UpdatePost(ctx, req.(*UpdatePostRequest))
+		return srv.(TaskServerServer).UpdateTask(ctx, req.(*UpdateTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PostServer_GetListPosts_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(GetListPostsRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _TaskServer_GetListTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetListTasksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(PostServerServer).GetListPosts(m, &postServerGetListPostsServer{stream})
+	if interceptor == nil {
+		return srv.(TaskServerServer).GetListTasks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskServer_GetListTasks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServerServer).GetListTasks(ctx, req.(*GetListTasksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-type PostServer_GetListPostsServer interface {
-	Send(*GetPostResponse) error
-	grpc.ServerStream
-}
-
-type postServerGetListPostsServer struct {
-	grpc.ServerStream
-}
-
-func (x *postServerGetListPostsServer) Send(m *GetPostResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-// PostServer_ServiceDesc is the grpc.ServiceDesc for PostServer service.
+// TaskServer_ServiceDesc is the grpc.ServiceDesc for TaskServer service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var PostServer_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "grpc_post_service.PostServer",
-	HandlerType: (*PostServerServer)(nil),
+var TaskServer_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "grpc_Task_service.TaskServer",
+	HandlerType: (*TaskServerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CreatePost",
-			Handler:    _PostServer_CreatePost_Handler,
+			MethodName: "CreateTask",
+			Handler:    _TaskServer_CreateTask_Handler,
 		},
 		{
-			MethodName: "GetPost",
-			Handler:    _PostServer_GetPost_Handler,
+			MethodName: "GetTask",
+			Handler:    _TaskServer_GetTask_Handler,
 		},
 		{
-			MethodName: "DeletePost",
-			Handler:    _PostServer_DeletePost_Handler,
+			MethodName: "DeleteTask",
+			Handler:    _TaskServer_DeleteTask_Handler,
 		},
 		{
-			MethodName: "UpdatePost",
-			Handler:    _PostServer_UpdatePost_Handler,
+			MethodName: "UpdateTask",
+			Handler:    _TaskServer_UpdateTask_Handler,
+		},
+		{
+			MethodName: "GetListTasks",
+			Handler:    _TaskServer_GetListTasks_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "GetListPosts",
-			Handler:       _PostServer_GetListPosts_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "server.proto",
 }

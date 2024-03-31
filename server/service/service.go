@@ -1,33 +1,70 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
-	"main_service/model"
-	"main_service/storage"
 	"net/http"
 	"os"
+	"server/model"
+	"server/storage"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"github.com/swaggo/http-swagger/v2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
+
+	pb "server/proto"
 )
 
 type RestApiServer struct {
-	Config     *RestApiConfig
-	Logger     *logrus.Logger
-	Router     *mux.Router
-	Storage    *storage.Storage
-	PrivateKey []byte
+	Config               *RestApiConfig
+	Logger               *logrus.Logger
+	Router               *mux.Router
+	Storage              *storage.Storage
+	PrivateKey           []byte
+	TaskServerGrpcClient pb.TaskServerClient
 }
 
 type Claims struct {
 	UserLogin string `json:"username"`
 	jwt.RegisteredClaims
+}
+
+func (server *RestApiServer) GetLoginFromToken(token string, privateKey []byte) (string, error) {
+	claims := &Claims{}
+
+	tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (any, error) {
+		return privateKey, nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if !tkn.Valid {
+		return "", errors.New("bad token")
+	}
+	return claims.UserLogin, nil
+}
+
+func (server *RestApiServer) EnsureLogin(token string, privateKey []byte) (string, error) {
+	login, err := server.GetLoginFromToken(token, privateKey)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = server.Storage.User().FindUserByLogin(login)
+	if err != nil {
+		return "", err
+	}
+	return login, nil
 }
 
 func NewRestApiServer(config *RestApiConfig) *RestApiServer {
@@ -60,6 +97,16 @@ func (server *RestApiServer) Start() error {
 
 	server.PrivateKey = bytes
 
+	server.Logger.Info("Trying to connnect task server")
+	conn, err := grpc.Dial(server.Config.TaskServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	if err != nil {
+		return err
+	}
+
+	server.Logger.Info("Trying to get task server client")
+	server.TaskServerGrpcClient = pb.NewTaskServerClient(conn)
+
 	server.Register()
 
 	server.Logger.Info("starting listen")
@@ -88,7 +135,12 @@ func (server *RestApiServer) Register() {
 		httpSwagger.DomID("swagger-ui"),
 	))
 
+	server.Router.HandleFunc("/create_task", server.HandleCreateTask()).Methods("POST")
+	server.Router.HandleFunc("/get_list_tasks", server.HandleListTasks()).Methods("POST")
 	server.Router.HandleFunc("/", server.HandleHello()).Methods("GET")
+	server.Router.HandleFunc("/get_task", server.HandleGetTask()).Methods("POST")
+	server.Router.HandleFunc("/delete_task", server.HandleDeleteTask()).Methods("PUT")
+	server.Router.HandleFunc("/update_task", server.HandleUpdateTask()).Methods("PUT")
 	server.Router.HandleFunc("/user_login", server.HandleUserLogin()).Methods("POST")
 	server.Router.HandleFunc("/register_user", server.HandleRegisterUser()).Methods("POST")
 	server.Router.HandleFunc("/update_user", server.HandleUpdateUser()).Methods("PUT")
@@ -218,28 +270,224 @@ func (server *RestApiServer) HandleUpdateUser() http.HandlerFunc {
 			server.HandleError(w, r, http.StatusForbidden, errors.New("Change password or login deprecated"))
 			return
 		}
-		claims := &Claims{}
-
-		tkn, err := jwt.ParseWithClaims(req.Token, claims, func(token *jwt.Token) (any, error) {
-			return server.PrivateKey, nil
-		})
-
+		login, err := server.GetLoginFromToken(req.Token, server.PrivateKey)
 		if err != nil {
-			server.HandleError(w, r, http.StatusBadRequest, errors.New("bad token"))
+			server.HandleError(w, r, http.StatusBadRequest, err)
 			return
 		}
-
-		if !tkn.Valid {
-			server.HandleError(w, r, http.StatusBadRequest, errors.New("bad token"))
-			return
-		}
-		user, err := server.Storage.User().FindUserByLogin(claims.UserLogin)
+		user, err := server.Storage.User().FindUserByLogin(login)
 		if err != nil {
 			server.HandleError(w, r, http.StatusBadRequest, err)
 			return
 		}
 		server.Storage.User().UpdateUser(user, req)
 		server.HandleRespond(w, r, http.StatusOK, user)
+	}
+}
+
+// @Summary Создание новой задачи
+// @Description Создание задачи с обязательными и необязательными полями
+// @ID create-task
+// @Accept  json
+// @Produce  json
+// @Param   user  body storage.CreateTask  true  "Токен и информация для создания задачи"
+// @Success 201  {object}   storage.CreateTaskResponse  "Пост создан"
+// @Failure 400  "Неверный токен"
+// @Failure 500  "Внутренняя ошибка сервера"
+// @Router /create_task [post]
+func (server *RestApiServer) HandleCreateTask() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		task := &storage.CreateTask{}
+		if err := json.NewDecoder(r.Body).Decode(task); err != nil {
+			server.HandleError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		login, err := server.EnsureLogin(task.Token, server.PrivateKey)
+
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		req := &pb.CreateTaskRequest{
+			Login: login,
+			Title: task.Title,
+			Body:  task.Body,
+			Date:  timestamppb.New(task.Date),
+		}
+
+		resp, err := server.TaskServerGrpcClient.CreateTask(context.Background(), req)
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		server.HandleRespond(w, r, http.StatusOK, &storage.CreateTaskResponse{
+			TaskId: resp.TaskId,
+		})
+	}
+}
+
+// @Summary Получение задачи по id
+// @Description Получение задачи
+// @ID get-task
+// @Accept  json
+// @Produce  json
+// @Param   user  body storage.GetTaskRequest  true  "Токен и id задачи"
+// @Success 201  {object}   storage.GetTaskResponse  "пост найден"
+// @Failure 400  "Неверный токен"
+// @Failure 500  "Внутренняя ошибка сервера"
+// @Router /get_task [post]
+func (server *RestApiServer) HandleGetTask() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		task := &storage.GetTaskRequest{}
+		if err := json.NewDecoder(r.Body).Decode(task); err != nil {
+			server.HandleError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		_, err := server.EnsureLogin(task.Token, server.PrivateKey)
+
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		req := &pb.GetTaskRequest{
+			TaskId: task.TaskId,
+		}
+
+		resp, err := server.TaskServerGrpcClient.GetTask(context.Background(), req)
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		server.HandleRespond(w, r, http.StatusOK, &storage.GetTaskResponse{
+			Login: resp.Login,
+			Title: resp.Title,
+			Body:  resp.Body,
+			Date:  resp.Date.AsTime(),
+		})
+	}
+}
+
+// @Summary Удаление задачи по id
+// @Description Удаление задачи
+// @ID delete-task
+// @Accept  json
+// @Produce  json
+// @Param   user  body storage.DeleteTaskRequest  true  "Токен и id для удаления задачи"
+// @Success 201  "задача удалена"
+// @Failure 400  "Неверный токен"
+// @Failure 500  "Внутренняя ошибка сервера"
+// @Router /delete_task [put]
+func (server *RestApiServer) HandleDeleteTask() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		task := &storage.DeleteTaskRequest{}
+		if err := json.NewDecoder(r.Body).Decode(task); err != nil {
+			server.HandleError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		_, err := server.EnsureLogin(task.Token, server.PrivateKey)
+
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		req := &pb.DeleteTaskRequest{
+			TaskId: task.TaskId,
+		}
+
+		_, err = server.TaskServerGrpcClient.DeleteTask(context.Background(), req)
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+	}
+}
+
+// @Summary Обновление задачи по id
+// @Description Обновление задачи
+// @ID update_task
+// @Accept  json
+// @Produce  json
+// @Param   user  body storage.UpdateTaskRequest  true  "Токен и информация по задаче"
+// @Success 201  "задача обновлена"
+// @Failure 400  "Неверный токен"
+// @Failure 500  "Внутренняя ошибка сервера"
+// @Router /update_task [put]
+func (server *RestApiServer) HandleUpdateTask() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		task := &storage.UpdateTaskRequest{}
+		if err := json.NewDecoder(r.Body).Decode(task); err != nil {
+			server.HandleError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		_, err := server.EnsureLogin(task.Token, server.PrivateKey)
+
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		req := &pb.UpdateTaskRequest{
+			TaskId: task.TaskId,
+			Title:  task.Title,
+			Body:   task.Body,
+			Date:   timestamppb.New(task.Date),
+		}
+
+		_, err = server.TaskServerGrpcClient.UpdateTask(context.Background(), req)
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+	}
+}
+
+// @Summary Получение всех задач пользователя с пагинацией
+// @Description Все задачи пользователя с пагинацией
+// @ID get_list_tasks
+// @Accept  json
+// @Produce  json
+// @Param   user  body storage.GetListTasks  true  "Токен и информация для пагинации"
+// @Success 201  "Задачи получены"
+// @Failure 400  "Неверный токен"
+// @Failure 500  "Внутренняя ошибка сервера"
+// @Router /get_list_tasks [post]
+func (server *RestApiServer) HandleListTasks() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		task := &storage.GetListTasks{}
+		if err := json.NewDecoder(r.Body).Decode(task); err != nil {
+			server.HandleError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		login, err := server.EnsureLogin(task.Token, server.PrivateKey)
+
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		req := &pb.GetListTasksRequest{
+			Limit:  task.Limit,
+			Offset: task.Offset,
+			Login:  login,
+		}
+
+		response, err := server.TaskServerGrpcClient.GetListTasks(context.Background(), req)
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		server.HandleRespond(w, r, http.StatusOK, response)
 	}
 }
 
