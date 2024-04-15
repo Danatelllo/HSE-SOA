@@ -233,7 +233,7 @@ func (server *RestApiServer) HandleRegisterUser() http.HandlerFunc {
 			return
 		}
 
-		user, err := server.Storage.User().FindUserByLogin(req.UserEmail)
+		user, err := server.Storage.User().FindUserByLogin(req.UserLogin)
 
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			server.HandleError(w, r, http.StatusBadRequest, errors.New("user already exists"))
@@ -391,7 +391,7 @@ func (server *RestApiServer) HandleDeleteTask() http.HandlerFunc {
 			return
 		}
 
-		_, err := server.EnsureLogin(task.Token, server.PrivateKey)
+		login, err := server.EnsureLogin(task.Token, server.PrivateKey)
 
 		if err != nil {
 			server.HandleError(w, r, http.StatusInternalServerError, err)
@@ -400,6 +400,7 @@ func (server *RestApiServer) HandleDeleteTask() http.HandlerFunc {
 
 		req := &pb.DeleteTaskRequest{
 			TaskId: task.TaskId,
+			Login:  login,
 		}
 
 		_, err = server.TaskServerGrpcClient.DeleteTask(context.Background(), req)
@@ -428,7 +429,7 @@ func (server *RestApiServer) HandleUpdateTask() http.HandlerFunc {
 			return
 		}
 
-		_, err := server.EnsureLogin(task.Token, server.PrivateKey)
+		login, err := server.EnsureLogin(task.Token, server.PrivateKey)
 
 		if err != nil {
 			server.HandleError(w, r, http.StatusInternalServerError, err)
@@ -440,6 +441,7 @@ func (server *RestApiServer) HandleUpdateTask() http.HandlerFunc {
 			Title:  task.Title,
 			Body:   task.Body,
 			Date:   timestamppb.New(task.Date),
+			Login:  login,
 		}
 
 		_, err = server.TaskServerGrpcClient.UpdateTask(context.Background(), req)

@@ -58,6 +58,16 @@ func (s *GrpcTaskServer) CreateTask(ctx context.Context, in *pb.CreateTaskReques
 }
 
 func (s *GrpcTaskServer) DeleteTask(ctx context.Context, in *pb.DeleteTaskRequest) (*emptypb.Empty, error) {
+	var Task storage.Task
+	if err := s.Storage.First(&Task, "id = ?", in.GetTaskId()).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("Failed to find Task with ID: %s", in.GetTaskId())
+		}
+		return nil, err
+	}
+	if in.Login != Task.Login {
+		return nil, errors.New("Can not modify another user tasks.")
+	}
 	if err := s.Storage.Delete(&storage.Task{}, "id = ?", in.GetTaskId()).Error; err != nil {
 		return nil, err
 	}
@@ -72,6 +82,10 @@ func (s *GrpcTaskServer) UpdateTask(ctx context.Context, in *pb.UpdateTaskReques
 			return nil, fmt.Errorf("Failed to find Task with ID: %s", in.GetTaskId())
 		}
 		return nil, err
+	}
+
+	if in.Login != Task.Login {
+		return nil, errors.New("Can not modify another user tasks.")
 	}
 
 	if in.GetTitle() != "" {
