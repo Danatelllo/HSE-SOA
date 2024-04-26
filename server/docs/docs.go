@@ -15,6 +15,152 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/create_task": {
+            "post": {
+                "description": "Создание задачи с обязательными и необязательными полями",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Создание новой задачи",
+                "operationId": "create-task",
+                "parameters": [
+                    {
+                        "description": "Токен и информация для создания задачи",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.CreateTask"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Пост создан",
+                        "schema": {
+                            "$ref": "#/definitions/storage.CreateTaskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный токен"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера"
+                    }
+                }
+            }
+        },
+        "/delete_task": {
+            "put": {
+                "description": "Удаление задачи",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Удаление задачи по id",
+                "operationId": "delete-task",
+                "parameters": [
+                    {
+                        "description": "Токен и id для удаления задачи",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.DeleteTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "задача удалена"
+                    },
+                    "400": {
+                        "description": "Неверный токен"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера"
+                    }
+                }
+            }
+        },
+        "/get_list_tasks": {
+            "post": {
+                "description": "Все задачи пользователя с пагинацией",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Получение всех задач пользователя с пагинацией",
+                "operationId": "get_list_tasks",
+                "parameters": [
+                    {
+                        "description": "Токен и информация для пагинации",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.GetListTasks"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Задачи получены"
+                    },
+                    "400": {
+                        "description": "Неверный токен"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера"
+                    }
+                }
+            }
+        },
+        "/get_task": {
+            "post": {
+                "description": "Получение задачи",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Получение задачи по id",
+                "operationId": "get-task",
+                "parameters": [
+                    {
+                        "description": "Токен и id задачи",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.GetTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "пост найден",
+                        "schema": {
+                            "$ref": "#/definitions/storage.GetTaskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный токен"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера"
+                    }
+                }
+            }
+        },
         "/register_user": {
             "post": {
                 "description": "Регистрация нового пользователя с вводом обязательных и необязательных данных.",
@@ -46,6 +192,41 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Не проходит валидация пользователя"
+                    }
+                }
+            }
+        },
+        "/update_task": {
+            "put": {
+                "description": "Обновление задачи",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Обновление задачи по id",
+                "operationId": "update_task",
+                "parameters": [
+                    {
+                        "description": "Токен и информация по задаче",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.UpdateTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "задача обновлена"
+                    },
+                    "400": {
+                        "description": "Неверный токен"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера"
                     }
                 }
             }
@@ -154,6 +335,78 @@ const docTemplate = `{
                 }
             }
         },
+        "storage.CreateTask": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.CreateTaskResponse": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.DeleteTaskRequest": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.GetListTasks": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.GetTaskRequest": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.GetTaskResponse": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "storage.LoginRequest": {
             "type": "object",
             "properties": {
@@ -213,6 +466,23 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "surname": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.UpdateTaskRequest": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "task_id": {
+                    "type": "string"
+                },
+                "title": {
                     "type": "string"
                 },
                 "token": {

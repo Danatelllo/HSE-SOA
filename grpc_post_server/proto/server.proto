@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package grpc_Task_service;
+
+option go_package = "proto/";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+message CreateTaskRequest {
+    string login = 1;
+    string title = 2;
+    string body = 3;
+    google.protobuf.Timestamp date = 4;
+}
+
+message CreateTaskResponse {
+    string Task_id = 1;
+}
+
+message GetTaskRequest {
+    string Task_id = 1;
+}
+
+message GetTaskResponse {
+    string login = 1;
+    string title = 2;
+    string body = 3;
+    google.protobuf.Timestamp date = 4;
+}
+
+message DeleteTaskRequest {
+    string Task_id = 1;
+    string Login = 2;
+}
+
+message UpdateTaskRequest {
+    string Task_id = 1;
+    string title = 2;
+    string body = 3;
+    google.protobuf.Timestamp date = 4;
+    string Login = 5;
+}
+
+message GetListTasksRequest {
+    int32 offset = 1;
+    int32 limit = 2;
+    string login = 3;
+}
+
+message GetListTasksResponse {
+    repeated GetTaskResponse tasks = 1;
+}
+
+service TaskServer {
+    rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+    rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+    rpc DeleteTask(DeleteTaskRequest) returns (google.protobuf.Empty);
+    rpc UpdateTask(UpdateTaskRequest) returns (google.protobuf.Empty);
+    rpc GetListTasks(GetListTasksRequest) returns (GetListTasksResponse);
+}

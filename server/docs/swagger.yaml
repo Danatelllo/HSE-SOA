@@ -17,6 +17,52 @@ definitions:
       surname:
         type: string
     type: object
+  storage.CreateTask:
+    properties:
+      body:
+        type: string
+      title:
+        type: string
+      token:
+        type: string
+    type: object
+  storage.CreateTaskResponse:
+    properties:
+      task_id:
+        type: string
+    type: object
+  storage.DeleteTaskRequest:
+    properties:
+      task_id:
+        type: string
+      token:
+        type: string
+    type: object
+  storage.GetListTasks:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      token:
+        type: string
+    type: object
+  storage.GetTaskRequest:
+    properties:
+      task_id:
+        type: string
+      token:
+        type: string
+    type: object
+  storage.GetTaskResponse:
+    properties:
+      body:
+        type: string
+      login:
+        type: string
+      title:
+        type: string
+    type: object
   storage.LoginRequest:
     properties:
       login:
@@ -60,6 +106,17 @@ definitions:
       token:
         type: string
     type: object
+  storage.UpdateTaskRequest:
+    properties:
+      body:
+        type: string
+      task_id:
+        type: string
+      title:
+        type: string
+      token:
+        type: string
+    type: object
 host: localhost:8081
 info:
   contact: {}
@@ -67,6 +124,102 @@ info:
   title: Todo App API
   version: "1.0"
 paths:
+  /create_task:
+    post:
+      consumes:
+      - application/json
+      description: Создание задачи с обязательными и необязательными полями
+      operationId: create-task
+      parameters:
+      - description: Токен и информация для создания задачи
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/storage.CreateTask'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пост создан
+          schema:
+            $ref: '#/definitions/storage.CreateTaskResponse'
+        "400":
+          description: Неверный токен
+        "500":
+          description: Внутренняя ошибка сервера
+      summary: Создание новой задачи
+  /delete_task:
+    put:
+      consumes:
+      - application/json
+      description: Удаление задачи
+      operationId: delete-task
+      parameters:
+      - description: Токен и id для удаления задачи
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/storage.DeleteTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: задача удалена
+        "400":
+          description: Неверный токен
+        "500":
+          description: Внутренняя ошибка сервера
+      summary: Удаление задачи по id
+  /get_list_tasks:
+    post:
+      consumes:
+      - application/json
+      description: Все задачи пользователя с пагинацией
+      operationId: get_list_tasks
+      parameters:
+      - description: Токен и информация для пагинации
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/storage.GetListTasks'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Задачи получены
+        "400":
+          description: Неверный токен
+        "500":
+          description: Внутренняя ошибка сервера
+      summary: Получение всех задач пользователя с пагинацией
+  /get_task:
+    post:
+      consumes:
+      - application/json
+      description: Получение задачи
+      operationId: get-task
+      parameters:
+      - description: Токен и id задачи
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/storage.GetTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: пост найден
+          schema:
+            $ref: '#/definitions/storage.GetTaskResponse'
+        "400":
+          description: Неверный токен
+        "500":
+          description: Внутренняя ошибка сервера
+      summary: Получение задачи по id
   /register_user:
     post:
       consumes:
@@ -91,6 +244,29 @@ paths:
         "400":
           description: Не проходит валидация пользователя
       summary: Регистрация нового пользователя
+  /update_task:
+    put:
+      consumes:
+      - application/json
+      description: Обновление задачи
+      operationId: update_task
+      parameters:
+      - description: Токен и информация по задаче
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/storage.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: задача обновлена
+        "400":
+          description: Неверный токен
+        "500":
+          description: Внутренняя ошибка сервера
+      summary: Обновление задачи по id
   /update_user:
     put:
       consumes:

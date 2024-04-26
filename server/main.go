@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	"main_service/service"
+	"server/service"
 )
 
 // @title Todo App API
