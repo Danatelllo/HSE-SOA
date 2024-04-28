@@ -11,6 +11,8 @@ import (
 	"server/storage"
 	"time"
 
+	"github.com/IBM/sarama"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -30,6 +32,18 @@ type RestApiServer struct {
 	Storage              *storage.Storage
 	PrivateKey           []byte
 	TaskServerGrpcClient pb.TaskServerClient
+	KafkaProducer        sarama.SyncProducer
+}
+
+type KafkaMessage struct {
+	Key       string
+	UserLogin string
+	TaskId    string
+}
+
+type Statistic struct {
+	Login  string `json:"login"`
+	TaskID string `json:"task_id"`
 }
 
 type Claims struct {
@@ -75,6 +89,44 @@ func NewRestApiServer(config *RestApiConfig) *RestApiServer {
 	}
 }
 
+func NewKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
+	config := sarama.NewConfig()
+	config.Producer.RequiredAcks = sarama.WaitForAll
+	config.Producer.Retry.Max = 10
+	config.Producer.Return.Successes = true
+	config.Producer.Partitioner = sarama.NewRandomPartitioner
+
+	producer, err := sarama.NewSyncProducer(brokers, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return producer, nil
+}
+
+func (server *RestApiServer) ProduceMessage(message KafkaMessage) error {
+	topic := "post_events"
+
+	jsonData, _ := json.Marshal(Statistic{
+		TaskID: message.TaskId,
+		Login:  message.UserLogin,
+	})
+
+	msg := &sarama.ProducerMessage{
+		Topic: topic,
+		Key:   sarama.StringEncoder(message.Key),
+		Value: sarama.ByteEncoder(jsonData),
+	}
+
+	_, _, err := server.KafkaProducer.SendMessage(msg)
+	if err != nil {
+		server.Logger.Info("Produce failed")
+		return err
+	}
+
+	return nil
+}
+
 func (server *RestApiServer) Start() error {
 	server.Logger.Info("starting RestApiServer")
 
@@ -96,6 +148,12 @@ func (server *RestApiServer) Start() error {
 	file.Close()
 
 	server.PrivateKey = bytes
+
+	server.KafkaProducer, err = NewKafkaProducer(server.Config.KafkaConfig)
+	if err != nil {
+		server.Logger.Info("Failed to create producer")
+		return err
+	}
 
 	server.Logger.Info("Trying to connnect task server")
 	conn, err := grpc.Dial(server.Config.TaskServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -144,6 +202,8 @@ func (server *RestApiServer) Register() {
 	server.Router.HandleFunc("/user_login", server.HandleUserLogin()).Methods("POST")
 	server.Router.HandleFunc("/register_user", server.HandleRegisterUser()).Methods("POST")
 	server.Router.HandleFunc("/update_user", server.HandleUpdateUser()).Methods("PUT")
+	server.Router.HandleFunc("/view_task", server.HandleTaskView()).Methods("POST")
+	// server.Router.HandleFunc("/like_task", server.HandleLikeTask()).Methods("POST")
 }
 
 func (server *RestApiServer) HandleHello() http.HandlerFunc {
@@ -501,5 +561,113 @@ func (server *RestApiServer) HandleRespond(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(code)
 	if data != nil {
 		json.NewEncoder(w).Encode(data)
+	}
+}
+
+// // @Summary Отправка просмотра задачи
+// // @ID view-task
+// // @Accept  json
+// // @Produce  json
+// // @Success 201  "Просмотр успешно добавлен"
+// // @Failure 400  "Внутрення ошибка сервера"
+// // @Failure 400  "Не проходит валидация пользователя"
+// // @Router /view_task [post]
+// func (server *RestApiServer) HandleTaskView() http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		req := &storage.RequestRegister{}
+// 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+// 			server.HandleError(w, r, http.StatusBadRequest, err)
+// 			return
+// 		}
+
+// 		user, err := server.Storage.User().FindUserByLogin(req.UserLogin)
+
+// 		if !errors.Is(err, gorm.ErrRecordNotFound) {
+// 			server.HandleError(w, r, http.StatusBadRequest, errors.New("user already exists"))
+// 		}
+
+// 		user = FillUserFromRequest(req)
+// 		if _, err := server.Storage.User().Create(user); err != nil {
+// 			server.HandleError(w, r, http.StatusBadRequest, err)
+// 			return
+// 		}
+
+// 		server.HandleRespond(w, r, http.StatusCreated, user)
+// 	}
+// }
+
+// @Summary Отправка просмотра задачи
+// @ID view-task
+// @Accept  json
+// @Produce  json
+// @Param   view_info  body storage.ViewTaskRequest  true  "Токен, id"
+// @Success 200  "Просмотр успешно добавлен"
+// @Failure 400  "Внутрення ошибка сервера"
+// @Router /view_task [post]
+func (server *RestApiServer) HandleTaskView() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := &storage.ViewTaskRequest{}
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			server.HandleError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		login, err := server.EnsureLogin(req.Token, server.PrivateKey)
+
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		err = server.ProduceMessage(KafkaMessage{
+			Key:       "view",
+			UserLogin: login,
+			TaskId:    req.TaskId,
+		})
+
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		server.HandleRespond(w, r, http.StatusCreated, nil)
+	}
+}
+
+// @Summary Отправка просмотра задачи
+// @ID like-task
+// @Accept  json
+// @Produce  json
+// @Param   like_info  body storage.ViewTaskRequest  true  "Токен, id"
+// @Success 200  "Like успешно добавлен"
+// @Failure 400  "Внутрення ошибка сервера"
+// @Router /view_task [post]
+func (server *RestApiServer) HandleLikeTask() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := &storage.ViewTaskRequest{}
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			server.HandleError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		login, err := server.EnsureLogin(req.Token, server.PrivateKey)
+
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		err = server.ProduceMessage(KafkaMessage{
+			Key:       "like",
+			UserLogin: login,
+			TaskId:    req.TaskId,
+		})
+
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		server.HandleRespond(w, r, http.StatusCreated, nil)
 	}
 }

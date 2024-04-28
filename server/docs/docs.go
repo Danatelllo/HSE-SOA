@@ -306,6 +306,37 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/view_task": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Отправка просмотра задачи",
+                "operationId": "like-task",
+                "parameters": [
+                    {
+                        "description": "Токен, id",
+                        "name": "like_info",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.ViewTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Like успешно добавлен"
+                    },
+                    "400": {
+                        "description": "Внутрення ошибка сервера"
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -483,6 +514,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.ViewTaskRequest": {
+            "type": "object",
+            "properties": {
+                "task_id": {
                     "type": "string"
                 },
                 "token": {

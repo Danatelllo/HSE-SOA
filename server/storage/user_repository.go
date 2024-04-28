@@ -77,6 +77,11 @@ type CreateTaskResponse struct {
 	TaskId string `json:"task_id"`
 }
 
+type ViewTaskRequest struct {
+	TaskId string `json:"task_id"`
+	Token  string `json:"token"`
+}
+
 type UserRepository struct {
 	DB *gorm.DB
 }

@@ -117,6 +117,13 @@ definitions:
       token:
         type: string
     type: object
+  storage.ViewTaskRequest:
+    properties:
+      task_id:
+        type: string
+      token:
+        type: string
+    type: object
 host: localhost:8081
 info:
   contact: {}
@@ -319,4 +326,24 @@ paths:
         "500":
           description: Внутренняя ошибка сервера
       summary: Вход для пользователя
+  /view_task:
+    post:
+      consumes:
+      - application/json
+      operationId: like-task
+      parameters:
+      - description: Токен, id
+        in: body
+        name: like_info
+        required: true
+        schema:
+          $ref: '#/definitions/storage.ViewTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Like успешно добавлен
+        "400":
+          description: Внутрення ошибка сервера
+      summary: Отправка просмотра задачи
 swagger: "2.0"
