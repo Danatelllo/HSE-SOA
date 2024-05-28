@@ -9,7 +9,7 @@ type GrpcTaskServerConfig struct {
 
 func NewGrpcTaskServerConfig() *GrpcTaskServerConfig {
 	return &GrpcTaskServerConfig{
-		Port:          "0.0.0.0:8080",
+		Port:          "0.0.0.0:8800",
 		StorageConfig: storage.NewConfig(),
 	}
 }

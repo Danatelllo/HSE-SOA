@@ -70,6 +70,13 @@ definitions:
       password:
         type: string
     type: object
+  storage.MetricsRequest:
+    properties:
+      task_id:
+        type: string
+      token:
+        type: string
+    type: object
   storage.RequestRegister:
     properties:
       birthday:
@@ -106,6 +113,14 @@ definitions:
       token:
         type: string
     type: object
+  storage.TopRequest:
+    properties:
+      metric_type:
+        description: '"views" или "likes"'
+        type: string
+      token:
+        type: string
+    type: object
   storage.UpdateTaskRequest:
     properties:
       body:
@@ -117,8 +132,15 @@ definitions:
       token:
         type: string
     type: object
+  storage.UserRankingRequest:
+    properties:
+      token:
+        type: string
+    type: object
   storage.ViewTaskRequest:
     properties:
+      owner:
+        type: string
       task_id:
         type: string
       token:
@@ -227,6 +249,95 @@ paths:
         "500":
           description: Внутренняя ошибка сервера
       summary: Получение задачи по id
+  /get_task_metrics:
+    post:
+      consumes:
+      - application/json
+      description: Количество лайков и просмотров
+      operationId: get_task_mertics
+      parameters:
+      - description: Токен и task id
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/storage.MetricsRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Метрика
+        "400":
+          description: Неверный токен
+        "500":
+          description: Внутренняя ошибка сервера
+      summary: Получение лайков и просмотров
+  /get_top_tasks:
+    post:
+      consumes:
+      - application/json
+      description: Количество лайков и просмотров
+      operationId: get_top_tasks
+      parameters:
+      - description: Токен и task id
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/storage.TopRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: топ тасок
+        "400":
+          description: Неверный токен
+        "500":
+          description: Внутренняя ошибка сервера
+      summary: Получение по топу лайков и просмотров
+  /get_user_ranking:
+    post:
+      consumes:
+      - application/json
+      description: топ по пользователям
+      operationId: get_user_ranking
+      parameters:
+      - description: Токен
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/storage.UserRankingRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: топ пользователей
+        "400":
+          description: Неверный токен
+        "500":
+          description: Внутренняя ошибка сервера
+      summary: Получение топа по пользователям
+  /like_task:
+    post:
+      consumes:
+      - application/json
+      operationId: like-task
+      parameters:
+      - description: Токен, id
+        in: body
+        name: like_info
+        required: true
+        schema:
+          $ref: '#/definitions/storage.ViewTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Like успешно добавлен
+        "400":
+          description: Внутрення ошибка сервера
+      summary: Отправка просмотра задачи
   /register_user:
     post:
       consumes:
@@ -330,11 +441,11 @@ paths:
     post:
       consumes:
       - application/json
-      operationId: like-task
+      operationId: view-task
       parameters:
       - description: Токен, id
         in: body
-        name: like_info
+        name: view_info
         required: true
         schema:
           $ref: '#/definitions/storage.ViewTaskRequest'
@@ -342,7 +453,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Like успешно добавлен
+          description: Просмотр успешно добавлен
         "400":
           description: Внутрення ошибка сервера
       summary: Отправка просмотра задачи

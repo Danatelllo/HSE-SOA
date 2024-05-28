@@ -80,6 +80,21 @@ type CreateTaskResponse struct {
 type ViewTaskRequest struct {
 	TaskId string `json:"task_id"`
 	Token  string `json:"token"`
+	Owner  string `json:"owner"`
+}
+
+type MetricsRequest struct {
+	TaskId string `json:"task_id"`
+	Token  string `json:"token"`
+}
+
+type TopRequest struct {
+	MetricType string `json:"metric_type"` // "views" или "likes"
+	Token      string `json:"token"`
+}
+
+type UserRankingRequest struct {
+	Token string `json:"token"`
 }
 
 type UserRepository struct {

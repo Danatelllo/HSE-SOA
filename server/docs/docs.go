@@ -161,6 +161,142 @@ const docTemplate = `{
                 }
             }
         },
+        "/get_task_metrics": {
+            "post": {
+                "description": "Количество лайков и просмотров",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Получение лайков и просмотров",
+                "operationId": "get_task_mertics",
+                "parameters": [
+                    {
+                        "description": "Токен и task id",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.MetricsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Метрика"
+                    },
+                    "400": {
+                        "description": "Неверный токен"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера"
+                    }
+                }
+            }
+        },
+        "/get_top_tasks": {
+            "post": {
+                "description": "Количество лайков и просмотров",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Получение по топу лайков и просмотров",
+                "operationId": "get_top_tasks",
+                "parameters": [
+                    {
+                        "description": "Токен и task id",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.TopRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "топ тасок"
+                    },
+                    "400": {
+                        "description": "Неверный токен"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера"
+                    }
+                }
+            }
+        },
+        "/get_user_ranking": {
+            "post": {
+                "description": "топ по пользователям",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Получение топа по пользователям",
+                "operationId": "get_user_ranking",
+                "parameters": [
+                    {
+                        "description": "Токен",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.UserRankingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "топ пользователей"
+                    },
+                    "400": {
+                        "description": "Неверный токен"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера"
+                    }
+                }
+            }
+        },
+        "/like_task": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Отправка просмотра задачи",
+                "operationId": "like-task",
+                "parameters": [
+                    {
+                        "description": "Токен, id",
+                        "name": "like_info",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/storage.ViewTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Like успешно добавлен"
+                    },
+                    "400": {
+                        "description": "Внутрення ошибка сервера"
+                    }
+                }
+            }
+        },
         "/register_user": {
             "post": {
                 "description": "Регистрация нового пользователя с вводом обязательных и необязательных данных.",
@@ -316,11 +452,11 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "summary": "Отправка просмотра задачи",
-                "operationId": "like-task",
+                "operationId": "view-task",
                 "parameters": [
                     {
                         "description": "Токен, id",
-                        "name": "like_info",
+                        "name": "view_info",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -330,7 +466,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Like успешно добавлен"
+                        "description": "Просмотр успешно добавлен"
                     },
                     "400": {
                         "description": "Внутрення ошибка сервера"
@@ -449,6 +585,17 @@ const docTemplate = `{
                 }
             }
         },
+        "storage.MetricsRequest": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "storage.RequestRegister": {
             "type": "object",
             "properties": {
@@ -504,6 +651,18 @@ const docTemplate = `{
                 }
             }
         },
+        "storage.TopRequest": {
+            "type": "object",
+            "properties": {
+                "metric_type": {
+                    "description": "\"views\" или \"likes\"",
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "storage.UpdateTaskRequest": {
             "type": "object",
             "properties": {
@@ -521,9 +680,20 @@ const docTemplate = `{
                 }
             }
         },
+        "storage.UserRankingRequest": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "storage.ViewTaskRequest": {
             "type": "object",
             "properties": {
+                "owner": {
+                    "type": "string"
+                },
                 "task_id": {
                     "type": "string"
                 },

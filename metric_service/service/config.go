@@ -11,8 +11,7 @@ type MetricServerConfig struct {
 
 func NewMetricServerConfig() *MetricServerConfig {
 	return &MetricServerConfig{
-		Host:          "0.0.0.0",
-		Port:          ":5432",
+		Port:          "0.0.0.0:9000",
 		StorageConfig: storage.NewConfig(),
 		KafkaConsumer: "kafka:29092",
 	}

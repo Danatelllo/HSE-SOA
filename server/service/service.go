@@ -32,6 +32,7 @@ type RestApiServer struct {
 	Storage              *storage.Storage
 	PrivateKey           []byte
 	TaskServerGrpcClient pb.TaskServerClient
+	MetricServerClient   pb.MetricsServiceClient
 	KafkaProducer        sarama.SyncProducer
 }
 
@@ -39,6 +40,7 @@ type KafkaMessage struct {
 	Key       string
 	UserLogin string
 	TaskId    string
+	Owner     string
 }
 
 type Statistic struct {
@@ -165,6 +167,16 @@ func (server *RestApiServer) Start() error {
 	server.Logger.Info("Trying to get task server client")
 	server.TaskServerGrpcClient = pb.NewTaskServerClient(conn)
 
+	server.Logger.Info("Trying to connnect metrics server")
+	conn, err = grpc.Dial(server.Config.MetricsServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	if err != nil {
+		return err
+	}
+
+	server.Logger.Info("Trying to get metric server client")
+	server.MetricServerClient = pb.NewMetricsServiceClient(conn)
+
 	server.Register()
 
 	server.Logger.Info("starting listen")
@@ -195,6 +207,9 @@ func (server *RestApiServer) Register() {
 
 	server.Router.HandleFunc("/create_task", server.HandleCreateTask()).Methods("POST")
 	server.Router.HandleFunc("/get_list_tasks", server.HandleListTasks()).Methods("POST")
+	server.Router.HandleFunc("/get_task_metrics", server.HandleTaskMetrics()).Methods("POST")
+	server.Router.HandleFunc("/get_top_tasks", server.HandleTopTasks()).Methods("POST")
+	server.Router.HandleFunc("/get_user_ranking", server.HandleUserRanking()).Methods("POST")
 	server.Router.HandleFunc("/", server.HandleHello()).Methods("GET")
 	server.Router.HandleFunc("/get_task", server.HandleGetTask()).Methods("POST")
 	server.Router.HandleFunc("/delete_task", server.HandleDeleteTask()).Methods("PUT")
@@ -203,7 +218,7 @@ func (server *RestApiServer) Register() {
 	server.Router.HandleFunc("/register_user", server.HandleRegisterUser()).Methods("POST")
 	server.Router.HandleFunc("/update_user", server.HandleUpdateUser()).Methods("PUT")
 	server.Router.HandleFunc("/view_task", server.HandleTaskView()).Methods("POST")
-	// server.Router.HandleFunc("/like_task", server.HandleLikeTask()).Methods("POST")
+	server.Router.HandleFunc("/like_task", server.HandleLikeTask()).Methods("POST")
 }
 
 func (server *RestApiServer) HandleHello() http.HandlerFunc {
@@ -623,6 +638,7 @@ func (server *RestApiServer) HandleTaskView() http.HandlerFunc {
 			Key:       "view",
 			UserLogin: login,
 			TaskId:    req.TaskId,
+			Owner:     req.Owner,
 		})
 
 		if err != nil {
@@ -641,7 +657,7 @@ func (server *RestApiServer) HandleTaskView() http.HandlerFunc {
 // @Param   like_info  body storage.ViewTaskRequest  true  "Токен, id"
 // @Success 200  "Like успешно добавлен"
 // @Failure 400  "Внутрення ошибка сервера"
-// @Router /view_task [post]
+// @Router /like_task [post]
 func (server *RestApiServer) HandleLikeTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req := &storage.ViewTaskRequest{}
@@ -661,6 +677,7 @@ func (server *RestApiServer) HandleLikeTask() http.HandlerFunc {
 			Key:       "like",
 			UserLogin: login,
 			TaskId:    req.TaskId,
+			Owner:     req.Owner,
 		})
 
 		if err != nil {
@@ -669,5 +686,122 @@ func (server *RestApiServer) HandleLikeTask() http.HandlerFunc {
 		}
 
 		server.HandleRespond(w, r, http.StatusCreated, nil)
+	}
+}
+
+// Получение общего количество просмотров и лайков по одной задаче или одному посту. В ответе нужно вернуть ID сущности и два числа с количествами.
+
+// @Summary Получение лайков и просмотров
+// @Description Количество лайков и просмотров
+// @ID get_task_mertics
+// @Accept  json
+// @Produce  json
+// @Param   user  body storage.MetricsRequest  true  "Токен и task id"
+// @Success 201  "Метрика"
+// @Failure 400  "Неверный токен"
+// @Failure 500  "Внутренняя ошибка сервера"
+// @Router /get_task_metrics [post]
+func (server *RestApiServer) HandleTaskMetrics() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		metricsRequest := &storage.MetricsRequest{}
+		if err := json.NewDecoder(r.Body).Decode(metricsRequest); err != nil {
+			server.HandleError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		_, err := server.EnsureLogin(metricsRequest.Token, server.PrivateKey)
+
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		req := &pb.MetricsRequest{
+			TaskId: metricsRequest.TaskId,
+		}
+
+		response, err := server.MetricServerClient.GetTaskMetrics(context.Background(), req)
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		server.HandleRespond(w, r, http.StatusOK, response)
+	}
+}
+
+// @Summary Получение по топу лайков и просмотров
+// @Description Количество лайков и просмотров
+// @ID get_top_tasks
+// @Accept  json
+// @Produce  json
+// @Param   user  body storage.TopRequest  true  "Токен и task id"
+// @Success 201  "топ тасок"
+// @Failure 400  "Неверный токен"
+// @Failure 500  "Внутренняя ошибка сервера"
+// @Router /get_top_tasks [post]
+func (server *RestApiServer) HandleTopTasks() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		metricsRequest := &storage.TopRequest{}
+		if err := json.NewDecoder(r.Body).Decode(metricsRequest); err != nil {
+			server.HandleError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		_, err := server.EnsureLogin(metricsRequest.Token, server.PrivateKey)
+
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		req := &pb.TopRequest{
+			MetricType: metricsRequest.MetricType,
+		}
+
+		response, err := server.MetricServerClient.GetTopTasks(context.Background(), req)
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		server.HandleRespond(w, r, http.StatusOK, response)
+	}
+}
+
+// @Summary Получение топа по пользователям
+// @Description топ по пользователям
+// @ID get_user_ranking
+// @Accept  json
+// @Produce  json
+// @Param   user  body storage.UserRankingRequest  true  "Токен"
+// @Success 201  "топ пользователей"
+// @Failure 400  "Неверный токен"
+// @Failure 500  "Внутренняя ошибка сервера"
+// @Router /get_user_ranking [post]
+func (server *RestApiServer) HandleUserRanking() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		metricsRequest := &storage.UserRankingRequest{}
+		if err := json.NewDecoder(r.Body).Decode(metricsRequest); err != nil {
+			server.HandleError(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		_, err := server.EnsureLogin(metricsRequest.Token, server.PrivateKey)
+
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		req := &pb.UserRankingRequest{}
+
+		response, err := server.MetricServerClient.GetUserRanking(context.Background(), req)
+		if err != nil {
+			server.HandleError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		server.HandleRespond(w, r, http.StatusOK, response)
 	}
 }
